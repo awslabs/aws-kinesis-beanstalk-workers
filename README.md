@@ -10,19 +10,13 @@ Building KCL Applications typically requires that you build an `IRecordProcessor
 
 With the Amazon Kinesis Elastic Beanstalk Managed Consumer, you only have 1 job to do as a programmer. You must *effectively* implement the IRecordProcessor by extending a `ManagedClientProcessor` class. This class has all the smarts about how to commit changes to the Application's progress, how to startup and shutdown, and so on. This allows you to focus on wiring in the business logic for your application, and not worry how it gets started up and maintained over time. Furthermore, rather than you having to figure out how to run the `Worker` instance on multiple machines, this module provides integration with Elastic Beanstalk. By including this module as a dependency, and the building with Maven, this module will generate a deployable WAR for Apache Tomcat that can be dropped into Elastic Beanstalk. AWS will then handle starting your Kinesis Workers and ensuring that they are automatically scaled based on processing demand.
 
+This project also gives you the ability to easily work with Kinesis records that are encrypted with the [AWS Key Management Services (KMS)](https://aws.amazon.com/kms). By providing a KMS Key ARN and optionally an Encryption Context, the `ManagedConsumer` will automatically decrypt data before it is supplied to your record processor.
+
 ## Getting Started
 
 To get started with this project, just create a fork from Github. You'll see a `com.amazonaws.services.kinesis` package which contains all the managed code, which you are welcome to look at but are not required to change. You'll also see a default package which contains the `MyRecordProcessor` class. This can be renamed and moved as you like. If nothing else, you need to add your code to this bit of the `processRecords()` method:
 
-```
-LOG.info(String.format("Received %s Records", records.size()));
-	
-// add a call to your business logic here!
-//
-// myLinkedClasses.doSomething(records)
-//
-//
-```
+![Image](MyClientProcessorProcessRecords.png)
 
 There's also a really important detail - when the KCL runs your application, in runs a separate `ManagedClientProcessor` instance in a Thread per Shard of the Stream. Because of this, we need a simple way to create new instances of `MyRecordProcessor`, and we've decided to use a `copy()` constructor. This is a method within `MyRecordProcessor` that knows how to create new instances of itself. The provided implementation just calls the `MyClientProcessor` constructor:
 
@@ -34,6 +28,8 @@ public ManagedClientProcessor copy() throws Exception {
 ```
 
 However, if your `MyRecordProcessor` class has local state variables which must be configured on instance initialisation, then it is recommended that you provide these as Constructor arguments. For (hopefully) obvious reasons, using `static` variables is probably a really bad idea here, but if you know what you are doing then go ahead.
+
+
 
 ## Running the application
 
